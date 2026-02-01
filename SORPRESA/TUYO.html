@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Para Ti ❤️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS BASE --- */
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: #4a4a4a;
+            overflow-x: hidden;
+            margin: 0;
+            /* El color de fondo lo maneja el #bg-canvas */
+        }
+
+        /* --- FONDO ANIMADO DINÁMICO --- */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; 
+            background: linear-gradient(180deg, #ffe4e6 0%, #fff0f3 100%);
+            transition: background 1.5s ease-in-out;
+        }
+
+        /* --- CONTENEDOR DE PARTÍCULAS --- */
+        #particles-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; overflow: hidden;
+        }
+        .particle {
+            position: absolute; top: -50px;
+            animation: floatDown linear forwards;
+            opacity: 0.6;
+        }
+        @keyframes floatDown {
+            to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        .font-handwriting { font-family: 'Dancing Script', cursive; }
+
+        /* --- SECCIONES (Scroll Reveal) --- */
+        section {
+            min-height: 90vh;
+            display: none; /* Oculto por defecto */
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        section.active {
+            display: flex;
+            animation: fadeIn 1s forwards;
+        }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 1. EL SOBRE --- */
+        .envelope-container { cursor: pointer; perspective: 1000px; margin: 40px 0; }
+        .envelope {
+            position: relative; width: 280px; height: 180px;
+            background: #ff4757; border-radius: 0 0 10px 10px;
+            transform-style: preserve-3d; transition: transform 0.6s;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .flap {
+            position: absolute; top: 0; left: 0; width: 0; height: 0;
+            border-left: 140px solid transparent; border-right: 140px solid transparent;
+            border-top: 100px solid #ff6b81; transform-origin: top;
+            transition: transform 0.4s 0.2s; z-index: 4;
+        }
+        .pocket {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 0 0 10px 10px; z-index: 3;
+            border-left: 140px solid #ff4757; border-right: 140px solid #ff4757;
+            border-bottom: 90px solid #ff2e44; border-top: 90px solid transparent;
+        }
+        .envelope.open .flap { transform: rotateX(180deg); z-index: 1; }
+
+        /* --- 2. CARTA FLOTANTE (MODAL) --- */
+        #letter-modal {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #letter-modal.show {
+            opacity: 1; pointer-events: auto;
+        }
+        
+        .paper-card {
+            background: #fffaf0;
+            width: 90%; max-width: 400px; max-height: 80vh;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transform: scale(0.8) translateY(50px);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow-y: auto;
+            border: 2px solid #ffe4e6;
+        }
+        #letter-modal.show .paper-card {
+            transform: scale(1) translateY(0);
+        }
+        
+        .paper-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+            background: repeating-linear-gradient(45deg, #ff4757, #ff4757 10px, #fff 10px, #fff 20px);
+            border-radius: 20px 20px 0 0;
+        }
+
+        /* --- 3. GALERÍA MÓVIL --- */
+        .gallery-wrapper {
+            width: 100%; overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            display: flex; gap: 15px; padding: 20px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .gallery-wrapper::-webkit-scrollbar { display: none; }
+        .photo-card {
+            flex: 0 0 80%;
+            scroll-snap-align: center;
+            background: white; padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: scale(0.98); transition: transform 0.3s;
+        }
+        .photo-card img {
+            width: 100%; height: 350px; object-fit: cover;
+            border-radius: 10px; pointer-events: none;
+        }
+
+        /* --- 4. RAZONES --- */
+        .reason-item {
+            background: white; width: 100%; max-width: 350px;
+            padding: 15px 20px; margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex; align-items: center; gap: 15px;
+            border-left: 4px solid #ff4757;
+            opacity: 0; transform: translateX(-20px);
+            transition: all 0.5s ease;
+        }
+        .reason-item.visible { opacity: 1; transform: translateX(0); }
+
+        /* --- 5. JUEGO --- */
+        #game-area {
+            position: relative; width: 100%; height: 350px;
+            background: rgba(255,255,255,0.6); border: 2px dashed #ff8fa3;
+            border-radius: 20px; overflow: hidden;
+            touch-action: none;
+        }
+        .falling-heart {
+            position: absolute; font-size: 3rem; cursor: pointer;
+            animation: fall linear forwards;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
+            z-index: 10;
+        }
+        @keyframes fall { to { transform: translateY(400px) rotate(20deg); } }
+
+        /* Botones */
+        .btn-action {
+            background: #ff4757; color: white; border: none;
+            padding: 12px 30px; border-radius: 50px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+            transition: transform 0.2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-action:active { transform: scale(0.95); }
+        
+        .btn-secondary {
+            background: transparent; border: 2px solid #ff4757; color: #ff4757;
+            padding: 10px 25px; border-radius: 50px; font-weight: bold;
+            margin-top: 15px; cursor: pointer;
+            background-color: rgba(255,255,255,0.5); /* Fondo semitransparente para leer mejor */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fondo Dinámico -->
+    <div id="bg-canvas"></div>
+    
+    <!-- Lluvia de Emojis -->
+    <div id="particles-container"></div>
+
+    <!-- Música Principal -->
+    <audio id="bg-music" loop>
+        <source src="1.mpeg" type="audio/mp3">
+    </audio>
+
+    <!-- Música Final -->
+    <audio id="final-music" loop>
+        <source src="2.mpeg" type="audio/mpeg">
+    </audio>
+
+    <button id="music-btn" class="fixed top-4 right-4 z-50 bg-white shadow-lg w-10 h-10 rounded-full text-rose-500 hidden flex items-center justify-center animate-bounce" onclick="toggleMusic()">
+        🎵
+    </button>
+
+    <!-- === CARTA FLOTANTE (MODAL) === -->
+    <div id="letter-modal">
+        <div class="paper-card">
+            <button onclick="closeLetter()" class="absolute top-4 right-4 text-gray-400 hover:text-rose-500 font-bold text-xl">✕</button>
+            <div class="text-center mb-6 mt-2">
+                <span class="text-4xl">💌</span>
+                <h2 class="font-handwriting text-3xl text-rose-600 mt-2">Para mi amor</h2>
+            </div>
+            <div id="letter-content" class="text-lg text-gray-700 font-handwriting leading-loose min-h-[150px]"></div>
+            <div class="mt-8 text-center">
+                <button onclick="closeLetter()" class="btn-action w-full justify-center">Guardar ❤️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === SECCIÓN 1: EL SOBRE === -->
+    <section id="sec-1" class="active" style="height: 100vh;">
+        <h1 class="text-5xl font-handwriting text-rose-600 mb-8 text-center drop-shadow-sm">Sorpresa ❤️</h1>
+        <div class="envelope-container" onclick="openEnvelope()">
+            <div id="envelope" class="envelope">
+                <div class="flap"></div>
+                <div class="pocket"></div>
+                <div class="absolute top-4 left-0 w-full flex justify-center transition-transform duration-500" id="letter-anim">
+                    <div class="w-3/4 h-16 bg-white rounded-t shadow-sm"></div>
+                </div>
+            </div>
+        </div>
+        <p class="text-gray-400 font-bold mt-8 animate-pulse text-sm uppercase tracking-widest">Toca para abrir</p>
+    </section>
+
+    <!-- === SECCIÓN 2: RAZONES === -->
+    <section id="sec-2">
+        <h2 class="text-4xl font-handwriting text-rose-600 mb-6">Por qué te quiero</h2>
+        <div id="reasons-list" class="w-full flex flex-col items-center pb-4"></div>
+        <button class="btn-secondary" onclick="revealSection('sec-3')">Ver nuestros recuerdos 👇</button>
+    </section>
+
+    <!-- === SECCIÓN 3: GALERÍA === -->
+    <section id="sec-3">
+        <h2 class="text-3xl font-handwriting text-rose-600 mb-2">Nuestros Momentos</h2>
+        <p class="text-xs text-gray-500 mb-4 uppercase tracking-wide">Desliza ↔️</p>
+        <div class="gallery-wrapper" id="gallery"></div>
+        <button class="btn-secondary mt-4" onclick="revealSection('sec-4')">Juguemos un poco 👇</button>
+    </section>
+
+    <!-- === SECCIÓN 4: JUEGO === -->
+    <section id="sec-4">
+        <h2 class="text-3xl font-handwriting text-rose-600 mb-2">Atrapa el Amor</h2>
+        <div class="flex justify-between w-full max-w-xs px-4 mb-2 text-sm font-bold text-gray-600">
+            <span id="score">Puntos: 0 / 10</span>
+        </div>
+        <div id="game-area">
+            <div id="start-screen" class="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20">
+                <p class="mb-4 text-gray-600 text-center px-6">Atrapa 10 corazones ❤️<br>antes de que toquen el suelo</p>
+                <button class="btn-action" onclick="startGame()">¡Jugar!</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- === SECCIÓN 5: FINAL === -->
+    <section id="sec-5">
+        <div class="w-full max-w-md p-4 flex flex-col items-center">
+            <!-- AQUÍ VA TU IMAGEN FINAL -->
+            <div class="w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white mb-6 transform hover:scale-105 transition-transform duration-500">
+                <img src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&q=80" class="w-full h-auto" alt="Final">
+            </div>
+            
+            <p class="text-3xl font-handwriting text-rose-600 mb-8 text-center animate-bounce">
+                ¡Me tienes loquito! 🤪
+            </p>
+            
+            <!-- Botón Corazón con Texto -->
+            <div onclick="window.location.href='floresamarillas_023.html'" class="flex flex-col items-center cursor-pointer transform hover:scale-110 transition-transform duration-300">
+                <button class="text-6xl animate-pulse drop-shadow-xl" title="Sorpresa">
+                    ❤️
+                </button>
+                <p class="text-xs text-rose-500 font-bold mt-2 animate-pulse tracking-widest">
+                    ¿QUIERES VER?
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // === PALETA DE COLORES Y EMOJIS (Por sección) ===
+        const SECTION_THEMES = {
+            'sec-1': { 
+                bg: 'linear-gradient(180deg, #ffe4e6 0%, #fff0f3 100%)', 
+                emoji: '💌' // Sobre
+            },
+            'sec-2': { 
+                bg: 'linear-gradient(180deg, #ffdde1 0%, #ee9ca7 100%)', 
+                emoji: '✨' // Razones (Magia)
+            },
+            'sec-3': { 
+                bg: 'linear-gradient(180deg, #e0c3fc 0%, #8ec5fc 100%)', 
+                emoji: '🌸' // Galería (Flores)
+            },
+            'sec-4': { 
+                bg: 'linear-gradient(180deg, #ff9a9e 0%, #fecfef 100%)', 
+                emoji: '💖' // Juego (Corazones)
+            },
+            'sec-5': { 
+                bg: 'linear-gradient(180deg, #f6d365 0%, #fda085 100%)', 
+                emoji: '🎉' // Final (Fiesta)
+            }
+        };
+
+        // Estado Global
+        let currentEmoji = '💌'; 
+
+        // === CONFIGURACIÓN ===
+        const CONFIG = {
+            letter: "¡Hola mi amor!\n\nNo quería dejar pasar este día sin decirte lo importante que eres para mí.\n\nGracias por tu paciencia, por tus risas y por hacer mi vida más bonita.\n\nEste pequeño detalle es para recordarte cuánto te quiero.\n\nSiempre tuyo/a. ❤️",
+            reasons: ["Por tu sonrisa", "Por tu apoyo incondicional", "Por hacerme reír", "Por tus abrazos", "Por ser mi equipo", "Por cuidarme"],
+            photos: [
+                "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=500", 
+                "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=500",
+                "https://images.unsplash.com/photo-1494774157365-9e04c6720e47?w=500",
+                "https://images.unsplash.com/photo-1522093537031-29a953601149?w=500"
+            ]
+        };
+
+        // === SISTEMA DE PARTÍCULAS (EMOJI RAIN) ===
+        function startEmojiRain() {
+            const container = document.getElementById('particles-container');
+            
+            setInterval(() => {
+                const p = document.createElement('div');
+                p.innerText = currentEmoji;
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.fontSize = (Math.random() * 20 + 15) + 'px';
+                p.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                
+                container.appendChild(p);
+
+                // Limpieza
+                setTimeout(() => { p.remove(); }, 5000);
+            }, 500); // Frecuencia de creación
+        }
+        
+        // Iniciar lluvia al cargar
+        startEmojiRain();
+
+        // === FUNCIONES NÚCLEO ===
+        function applyTheme(id) {
+            const theme = SECTION_THEMES[id];
+            if(theme) {
+                // Cambiar Fondo
+                document.getElementById('bg-canvas').style.background = theme.bg;
+                // Cambiar Emoji
+                currentEmoji = theme.emoji;
+            }
+        }
+
+        function revealSection(id) {
+            const el = document.getElementById(id);
+            el.style.display = 'flex';
+            setTimeout(() => {
+                el.classList.add('active');
+                el.scrollIntoView({behavior: 'smooth', block: 'start'});
+                
+                // Aplicar tema nuevo
+                applyTheme(id);
+
+                if(id === 'sec-2') renderReasons();
+                if(id === 'sec-3') renderGallery();
+            }, 50);
+        }
+
+        function openEnvelope() {
+            document.getElementById('envelope').classList.add('open');
+            document.getElementById('letter-anim').style.transform = 'translateY(-40px)';
+            
+            const audio = document.getElementById('bg-music');
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+            document.getElementById('music-btn').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('letter-modal').classList.add('show');
+                typeLetter();
+            }, 800);
+        }
+
+        function closeLetter() {
+            document.getElementById('letter-modal').classList.remove('show');
+            setTimeout(() => revealSection('sec-2'), 500);
+        }
+
+        function toggleMusic() {
+            const bgAudio = document.getElementById('bg-music');
+            const finalAudio = document.getElementById('final-music');
+            
+            if (!finalAudio.paused) {
+                 finalAudio.pause();
+                 return;
+            }
+
+            if(bgAudio.paused) bgAudio.play(); else bgAudio.pause();
+        }
+
+        function typeLetter() {
+            const el = document.getElementById('letter-content');
+            if(el.innerHTML.length > 5) return;
+            el.innerHTML = "";
+            let i = 0;
+            const txt = CONFIG.letter;
+            function type() {
+                if(i < txt.length) {
+                    el.innerHTML += txt.charAt(i) === '\n' ? '<br>' : txt.charAt(i);
+                    i++;
+                    setTimeout(type, 30);
+                }
+            }
+            type();
+        }
+
+        function renderReasons() {
+            const list = document.getElementById('reasons-list');
+            if(list.children.length > 0) return;
+            CONFIG.reasons.forEach((r, i) => {
+                const div = document.createElement('div');
+                div.className = 'reason-item';
+                div.innerHTML = `<span class="text-xl text-rose-500">❤️</span><span class="font-bold text-gray-600">${r}</span>`;
+                list.appendChild(div);
+                setTimeout(() => div.classList.add('visible'), i * 200);
+            });
+        }
+
+        function renderGallery() {
+            const gal = document.getElementById('gallery');
+            if(gal.children.length > 0) return;
+            CONFIG.photos.forEach(src => {
+                const d = document.createElement('div');
+                d.className = 'photo-card';
+                d.innerHTML = `<img src="${src}" loading="lazy"><div class="text-center mt-2 font-handwriting text-gray-400">Recuerdo ✨</div>`;
+                gal.appendChild(d);
+            });
+        }
+
+        // === JUEGO Y FINAL ===
+        let score = 0;
+        let gameActive = false;
+        let gameInterval;
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            score = 0;
+            updateScore();
+            gameActive = true;
+            gameInterval = setInterval(spawnHeart, 800);
+        }
+
+        function spawnHeart() {
+            if(!gameActive) return;
+            const area = document.getElementById('game-area');
+            const h = document.createElement('div');
+            h.innerText = Math.random() > 0.5 ? '❤️' : '💖';
+            h.className = 'falling-heart';
+            h.style.left = Math.random() * 80 + 10 + '%';
+            h.style.top = '-50px';
+            h.style.animationDuration = (Math.random() * 2 + 2) + 's';
+
+            const hit = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                if(h.style.pointerEvents === 'none') return;
+                h.style.pointerEvents = 'none';
+                score++;
+                updateScore();
+                h.style.transform = "scale(1.5)"; h.style.opacity = 0;
+                setTimeout(() => h.remove(), 200);
+                if(score >= 10) endGame();
+            };
+
+            h.addEventListener('mousedown', hit);
+            h.addEventListener('touchstart', hit, {passive:false});
+            area.appendChild(h);
+            setTimeout(() => { if(h.parentNode) h.remove(); }, 4000);
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = `Puntos: ${score} / 10`;
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+            document.querySelectorAll('.falling-heart').forEach(e => e.remove());
+            
+            // --- CAMBIO DE MÚSICA Y MOSTRAR FINAL ---
+            const bgAudio = document.getElementById('bg-music');
+            const finalAudio = document.getElementById('final-music');
+            
+            bgAudio.pause(); // Parar música inicial
+            finalAudio.volume = 0.8;
+            finalAudio.play().catch(e => console.log("Reproducción automática bloqueada"));
+
+            revealSection('sec-5'); // Mostrar imagen final
+        }
+    </script>
+</body>
+</html>

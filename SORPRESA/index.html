@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Conexión Segura</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: #0f0;
+        }
+
+        /* Lienzo para el efecto Matrix */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Contenedor central superior */
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4); /* Un poco más oscuro para resaltar el texto */
+        }
+
+        /* Estilo de los botones */
+        .btn {
+            background: #000;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 0 15px #0f0;
+            transition: all 0.3s ease;
+            max-width: 90%;
+            border-radius: 5px;
+        }
+
+        .btn:disabled {
+            border-color: #555;
+            color: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 25px #0f0;
+        }
+
+        /* Consola tipo CMD */
+        #cmd-box {
+            display: none;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #0f0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: left;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            min-height: 150px; /* Altura mínima para que no salte al escribir */
+        }
+
+        .cmd-line {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            text-shadow: 0 0 2px #0f0;
+            line-height: 1.4;
+        }
+
+        /* Cursor parpadeante */
+        .cursor::after {
+            content: '█';
+            animation: blink 1s infinite;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Contenedor de Video */
+        #video-container {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            background: #000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video {
+            width: 100%;
+            max-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <div id="container">
+        <button id="btn-timer" class="btn" disabled>Conectando... 5</button>
+
+        <div id="cmd-box">
+            <span id="line1" class="cmd-line"></span>
+            <span id="line2" class="cmd-line"></span>
+            <span id="line3" class="cmd-line"></span>
+        </div>
+
+        <button id="btn-enter" class="btn" style="display: none;">INGRESAR</button>
+    </div>
+
+    <div id="video-container">
+        <video id="final-video" playsinline>
+            <source src="video.mp4" type="video/mp4">
+            Tu navegador no soporta videos HTML5.
+        </video>
+    </div>
+
+    <script>
+        /* --- CONFIGURACIÓN MATRIX (Fondo) --- */
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const binary = "10";
+        // Fórmulas matemáticas mezcladas
+        const formulas = "∑∫π√∞≈≠≤≥±∂∆xyzsin(x)cos(y)E=mc²"; 
+        
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = fontSize + "px monospace";
+
+            for(let i = 0; i < drops.length; i++) {
+                // 10% probabilidad de ser fórmula blanca, 90% binario verde
+                const isFormula = Math.random() > 0.90; 
+                
+                const text = isFormula 
+                    ? formulas.charAt(Math.floor(Math.random() * formulas.length)) 
+                    : binary.charAt(Math.floor(Math.random() * binary.length));
+
+                ctx.fillStyle = isFormula ? "#fff" : "#0f0";
+                
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+
+        /* --- LÓGICA DE INTERACCIÓN --- */
+        const btnTimer = document.getElementById('btn-timer');
+        const cmdBox = document.getElementById('cmd-box');
+        const btnEnter = document.getElementById('btn-enter');
+        const videoContainer = document.getElementById('video-container');
+        const video = document.getElementById('final-video');
+        
+        // --- CAMBIA EL NOMBRE AQUÍ ---
+        const nombrePersona = "(nombre)"; 
+        // -----------------------------
+
+        let timeLeft = 5;
+
+        // 1. Cuenta regresiva inicial
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            btnTimer.innerText = `Conectando... ${timeLeft}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                btnTimer.innerText = "ESTABLECER CONEXIÓN";
+                btnTimer.disabled = false;
+            }
+        }, 1000);
+
+        // 2. Al hacer clic, inicia la secuencia CMD
+        btnTimer.addEventListener('click', () => {
+            btnTimer.style.display = 'none';
+            cmdBox.style.display = 'block';
+            typeWriterSequence();
+        });
+
+        // Función base de escritura
+        function typeWriter(elementId, text, speed, callback) {
+            let i = 0;
+            const element = document.getElementById(elementId);
+            element.classList.add('cursor'); // Añade el cursor parpadeante
+            
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    element.classList.remove('cursor'); // Quita cursor al terminar línea
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+
+        // Secuencia lenta de mensajes
+        function typeWriterSequence() {
+            // Línea 1: 100ms por letra
+            typeWriter('line1', `> Conexion fuerte establecida con ${nombrePersona}.............`, 100, () => {
+                
+                setTimeout(() => {
+                    // Línea 2: 120ms por letra
+                    typeWriter('line2', '> cargando texturas......', 120, () => {
+                        
+                        setTimeout(() => {
+                            // Línea 3: 150ms por letra (más lento)
+                            typeWriter('line3', '> ingresando..........', 150, () => {
+                                
+                                setTimeout(() => {
+                                    btnEnter.style.display = 'block';
+                                }, 500);
+
+                            });
+                        }, 800); // Pausa entre líneas
+                    });
+                }, 800); // Pausa entre líneas
+            });
+        }
+
+        // 3. Ver video y redirigir
+        btnEnter.addEventListener('click', () => {
+            document.getElementById('container').style.display = 'none';
+            videoContainer.style.display = 'flex';
+            video.play();
+        });
+
+        video.onended = () => {
+            window.location.href = "TUYO.html";
+        };
+
+    </script>
+</body>
+</html>
